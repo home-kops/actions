@@ -1,0 +1,77 @@
+name: Publish Docker Image
+description: This action builds and publishes a Docker image to Docker Hub.
+inputs:
+  dockerhub_username:
+    description: Docker Hub username
+    required: true
+  dockerhub_token:
+    description: Docker Hub token
+    required: true
+  github_token:
+    description: GitHub token
+    required: true
+runs:
+  using: "composite"
+  steps:
+  - name: Store condition to decide if we should build
+    id: check-build
+    shell: bash
+    run: |
+      commit_message="$(git log -1 --pretty=%B | head -n1)"
+      should_build="$(grep -E "^\[build\].*" <<< "${commit_message}" || true)"
+
+      if [[ -z "${should_build}" ]]; then
+        co_author="$(git log -1 --format="%(trailers:key=Co-authored-by)")"
+        should_build="$(grep "Renovate Bot" <<< "${co_author}" || true)"
+      fi
+
+      if [[ "${should_build}" ]]; then
+        echo "build=true" >> ${GITHUB_OUTPUT}
+      else
+        echo "build=false" >> ${GITHUB_OUTPUT}
+      fi
+
+  - name: Create the next tag
+    id: create-tag
+    if: steps.check-build.outputs.build == 'true'
+    shell: bash
+    run: |
+      last_tag=$(git describe --tags --abbrev=0 || echo "v0.0.0")
+      tag="$(awk -F. '/[0-9]+\./{$NF+=1;print}' OFS=. <<< "${last_tag}")"
+
+      echo "tag=${tag}" >> ${GITHUB_OUTPUT}
+
+  - name: Login to Docker Hub
+    uses: docker/login-action@v3
+    if: steps.check-build.outputs.build == 'true'
+    with:
+      username: ${{ inputs.dockerhub_username }}
+      password: ${{ inputs.dockerhub_token }}
+
+  - name: Set up QEMU
+    if: steps.check-build.outputs.build == 'true'
+    uses: docker/setup-qemu-action@v3
+
+  - name: Set up Docker Buildx
+    if: steps.check-build.outputs.build == 'true'
+    uses: docker/setup-buildx-action@v3
+
+  - name: Build and push
+    if: steps.check-build.outputs.build == 'true'
+    uses: docker/build-push-action@v6
+    with:
+      platforms: linux/amd64
+      context: .
+      push: true
+      tags: |
+        ${{ inputs.dockerhub_username }}/jenkins:${{ create-tag.outputs.tag }}
+        ${{ inputs.dockerhub_username }}/jenkins:latest
+
+  - name: Tag the commit
+    if: steps.check-build.outputs.build == 'true'
+    shell: bash
+    run: |
+      git tag ${{ steps.create-tag.outputs.tag }}
+      git push origin ${{ steps.create-tag.outputs.tag }}
+    env:
+      GITHUB_TOKEN: ${{ inputs.github_token }}
