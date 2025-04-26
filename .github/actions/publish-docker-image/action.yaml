@@ -1,6 +1,9 @@
 name: Publish Docker Image
 description: This action builds and publishes a Docker image to Docker Hub.
 inputs:
+  image_name:
+    description: Name of the Docker image
+    required: true
   dockerhub_username:
     description: Docker Hub username
     required: true
@@ -64,8 +67,8 @@ runs:
       context: .
       push: true
       tags: |
-        ${{ inputs.dockerhub_username }}/jenkins:${{ steps.create-tag.outputs.tag }}
-        ${{ inputs.dockerhub_username }}/jenkins:latest
+        ${{ inputs.dockerhub_username }}/${{ inputs.image_name }}:${{ steps.create-tag.outputs.tag }}
+        ${{ inputs.dockerhub_username }}/${{ inputs.image_name }}:latest
 
   - name: Tag the commit
     if: steps.check-build.outputs.build == 'true'
