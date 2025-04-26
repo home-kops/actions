@@ -64,7 +64,7 @@ runs:
       context: .
       push: true
       tags: |
-        ${{ inputs.dockerhub_username }}/jenkins:${{ create-tag.outputs.tag }}
+        ${{ inputs.dockerhub_username }}/jenkins:${{ steps.create-tag.outputs.tag }}
         ${{ inputs.dockerhub_username }}/jenkins:latest
 
   - name: Tag the commit
