@@ -25,7 +25,7 @@ runs:
 
       if [[ -z "${should_build}" ]]; then
         co_author="$(git log -1 --format="%(trailers:key=Co-authored-by)")"
-        should_build="$(grep "renovate[bot]" <<< "${co_author}" || true)"
+        should_build="$(grep "renovate\[bot\]" <<< "${co_author}" || true)"
       fi
 
       if [[ "${should_build}" ]]; then
