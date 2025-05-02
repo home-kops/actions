@@ -1,12 +1,4 @@
 {
-    "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-    "automerge": true,
-    "packageRules": [
-      {
-          "depTypeList": ["dependencies"],
-          "updateTypes": ["major"],
-        "automerge": false
-      }
-    ]
-  }
+    "$schema": "https://docs.renovatebot.com/renovate-schema.json"
+}
   
