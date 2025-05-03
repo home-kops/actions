@@ -39,7 +39,7 @@ runs:
     if: steps.check-build.outputs.build == 'true'
     shell: bash
     run: |
-      last_tag=$(git describe --tags --abbrev=0 || echo "v0.0.0")
+      last_tag=$(git describe --tags --abbrev=0 || echo "0.0.0")
       tag="$(awk -F. '/[0-9]+\./{$NF+=1;print}' OFS=. <<< "${last_tag}")"
 
       echo "tag=${tag}" >> ${GITHUB_OUTPUT}
