@@ -44,5 +44,6 @@ jobs:
           echo "Validating helm in directory: ${dir}"
 
           helm lint "${dir}"
+          (cd "${dir}" && helm dependency build)
           helm template "${dir}" -f "${dir}/values.yaml"
         done <<< "${helm_dirs}"
