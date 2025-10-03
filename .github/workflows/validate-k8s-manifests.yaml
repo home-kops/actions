@@ -1,0 +1,66 @@
+name: Validate Kubernetes Manifests
+
+on:
+  workflow_call:
+
+concurrency:
+  group: ${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    outputs:
+      kustomization_dirs: ${{ steps.kustomization_dirs.outputs.value }}
+      helm_dirs: ${{ steps.helm_dirs.outputs.value }}
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Setup kubectl
+      uses: azure/setup-kubectl@v4
+      with:
+        version: 'latest'
+
+    - name: Find directories with kustomization.yaml
+      id: kustomization_dirs
+      run: |
+        kustomization_dirs="$(find . -type f -name 'kustomization.yaml' -exec dirname {} \; | sed 's|^\./||' | sed 's/.*/"&"/' | paste -sd, - | sed 's/,/, /g')"
+        echo "value=[$kustomization_dirs]" >> $GITHUB_OUTPUT
+
+    - name: Find directories with Chart.yaml
+      id: helm_dirs
+      run: |
+        helm_dirs="$(find . -type f -name 'Chart.yaml' -exec dirname {} \; | sed 's|^\./||' | sed 's/.*/"&"/' | paste -sd, - | sed 's/,/, /g')"
+        echo "value=[$helm_dirs]" >> $GITHUB_OUTPUT
+
+  validate-kustomizations:
+    needs: [ setup ]
+    runs-on: ubuntu-latest
+    if: ${{ needs.setup.outputs.kustomization_dirs != '[]' }}
+    strategy:
+      matrix:
+        value: ${{fromJSON(needs.setup.outputs.kustomization_dirs)}}
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Validate manifests
+      run: kubectl kustomize "${{ matrix.value }}" --enable-helm
+
+  validate-helm:
+    needs: [ setup ]
+    runs-on: ubuntu-latest
+    if: ${{ needs.setup.outputs.helm_dirs != '[]' }}
+    strategy:
+      matrix:
+        value: ${{fromJSON(needs.setup.outputs.helm_dirs)}}
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Helm lint
+      run: helm lint "${{ matrix.value }}"
+
+    - name: Helm template
+      run: helm template "${{ matrix.value }}" -f "${{ matrix.value }}/values.yaml"
