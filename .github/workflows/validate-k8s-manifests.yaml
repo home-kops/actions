@@ -22,41 +22,57 @@ jobs:
       id: kustomization_dirs
       run: |
         kustomization_dirs="$(find . -type f -name 'kustomization.yaml' -exec dirname {} \; | sed 's|^\./||' | sed 's/.*/"&"/' | paste -sd, - | sed 's/,/, /g')"
-        echo "value=[$kustomization_dirs]" >> $GITHUB_OUTPUT
+        echo "value=[${kustomization_dirs}]" >> $GITHUB_OUTPUT
 
     - name: Find directories with Chart.yaml
       id: helm_dirs
       run: |
         helm_dirs="$(find . -type f -name 'Chart.yaml' -exec dirname {} \; | sed 's|^\./||' | sed 's/.*/"&"/' | paste -sd, - | sed 's/,/, /g')"
-        echo "value=[$helm_dirs]" >> $GITHUB_OUTPUT
+        echo "value=[${helm_dirs}]" >> $GITHUB_OUTPUT
 
   validate-kustomizations:
     needs: [ setup ]
     runs-on: ubuntu-latest
-    if: ${{ needs.setup.outputs.kustomization_dirs != '[]' }}
-    strategy:
-      matrix:
-        value: ${{fromJSON(needs.setup.outputs.kustomization_dirs)}}
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
 
     - name: Validate manifests
-      run: kubectl kustomize "${{ matrix.value }}" --enable-helm
+      run: |
+        kustomization_dirs=${{ needs.setup.outputs.kustomization_dirs }}
+
+        if [ "${kustomization_dirs}" = "[]" ]; then
+          echo "No kustomization.yaml files found."
+          exit 0
+        fi
+
+        echo "${kustomization_dirs}" | jq -c '.[]' | while read dir; do
+          dir=$(echo ${dir} | sed 's/^"\(.*\)"$/\1/')
+          echo "Validating kustomization in directory: ${dir}"
+
+          kubectl kustomize "${dir}" --enable-helm
+        done
 
   validate-helm:
     needs: [ setup ]
     runs-on: ubuntu-latest
-    if: ${{ needs.setup.outputs.helm_dirs != '[]' }}
-    strategy:
-      matrix:
-        value: ${{fromJSON(needs.setup.outputs.helm_dirs)}}
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    - name: Helm lint
-      run: helm lint "${{ matrix.value }}"
+    - name: Helm validation
+      run: |
+        helm_dirs=${{ needs.setup.outputs.helm_dirs }}
 
-    - name: Helm template
-      run: helm template "${{ matrix.value }}" -f "${{ matrix.value }}/values.yaml"
+        if [ "${helm_dirs}" = "[]" ]; then
+          echo "No Helm charts found."
+          exit 0
+        fi
+
+        echo "${helm_dirs}" | jq -c '.[]' | while read dir; do
+          dir=$(echo ${dir} | sed 's/^"\(.*\)"$/\1/')
+          echo "Validating helm in directory: ${dir}"
+
+          helm lint "${dir}"
+          helm template "${dir}" -f "${dir}/values.yaml"
+        done
