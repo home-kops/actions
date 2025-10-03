@@ -4,34 +4,7 @@ on:
   workflow_call:
 
 jobs:
-  setup:
-    runs-on: ubuntu-latest
-    outputs:
-      kustomization_dirs: ${{ steps.kustomization_dirs.outputs.value }}
-      helm_dirs: ${{ steps.helm_dirs.outputs.value }}
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-
-    - name: Setup kubectl
-      uses: azure/setup-kubectl@v4
-      with:
-        version: 'latest'
-
-    - name: Find directories with kustomization.yaml
-      id: kustomization_dirs
-      run: |
-        kustomization_dirs="$(find . -type f -name 'kustomization.yaml' -exec dirname {} \; | sed 's|^\./||' | sed 's/.*/"&"/' | paste -sd, - | sed 's/,/, /g')"
-        echo "value=[${kustomization_dirs}]" >> $GITHUB_OUTPUT
-
-    - name: Find directories with Chart.yaml
-      id: helm_dirs
-      run: |
-        helm_dirs="$(find . -type f -name 'Chart.yaml' -exec dirname {} \; | sed 's|^\./||' | sed 's/.*/"&"/' | paste -sd, - | sed 's/,/, /g')"
-        echo "value=[${helm_dirs}]" >> $GITHUB_OUTPUT
-
   validate-kustomizations:
-    needs: [ setup ]
     runs-on: ubuntu-latest
     steps:
     - name: Checkout repository
@@ -39,22 +12,20 @@ jobs:
 
     - name: Validate manifests
       run: |
-        kustomization_dirs=${{ needs.setup.outputs.kustomization_dirs }}
+        kustomization_dirs=$(find . -type f -name 'kustomization.yaml' -exec dirname {} \; | sed 's|^\./||')
 
-        if [ "${kustomization_dirs}" = "[]" ]; then
+        if [[ -z "${kustomization_dirs}" ]]; then
           echo "No kustomization.yaml files found."
           exit 0
         fi
 
-        echo "${kustomization_dirs}" | jq -c '.[]' | while read dir; do
-          dir=$(echo ${dir} | sed 's/^"\(.*\)"$/\1/')
+        while read dir; do
           echo "Validating kustomization in directory: ${dir}"
 
-          kubectl kustomize "${dir}" --enable-helm
-        done
+          kubectl kustomize "${dir}" --enable-helm 
+        done <<< "${kustomization_dirs}"
 
   validate-helm:
-    needs: [ setup ]
     runs-on: ubuntu-latest
     steps:
     - name: Checkout repository
@@ -62,17 +33,16 @@ jobs:
 
     - name: Helm validation
       run: |
-        helm_dirs=${{ needs.setup.outputs.helm_dirs }}
+        helm_dirs=$(find . -type f -name 'Chart.yaml' -exec dirname {} \; | sed 's|^\./||')
 
-        if [ "${helm_dirs}" = "[]" ]; then
-          echo "No Helm charts found."
+        if [[ -z "${helm_dirs}" ]]; then
+          echo "No Chart.yaml files found."
           exit 0
         fi
 
-        echo "${helm_dirs}" | jq -c '.[]' | while read dir; do
-          dir=$(echo ${dir} | sed 's/^"\(.*\)"$/\1/')
+        while read dir; do
           echo "Validating helm in directory: ${dir}"
 
           helm lint "${dir}"
           helm template "${dir}" -f "${dir}/values.yaml"
-        done
+        done <<< "${helm_dirs}"
