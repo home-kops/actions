@@ -22,7 +22,7 @@ jobs:
         while read dir; do
           echo "Validating kustomization in directory: ${dir}"
 
-          kubectl kustomize "${dir}" --enable-helm 
+          kubectl kustomize "${dir}" --enable-helm
         done <<< "${kustomization_dirs}"
 
   validate-helm:
