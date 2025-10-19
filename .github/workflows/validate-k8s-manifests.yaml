@@ -22,7 +22,9 @@ jobs:
         while read dir; do
           echo "Validating kustomization in directory: ${dir}"
 
-          (cd "${dir}" && helm dependency build)
+          if [[ -f "${dir}/Chart.yaml" ]]; then
+            (cd "${dir}" && helm dependency build)
+          fi
           kubectl kustomize "${dir}" --enable-helm
         done <<< "${kustomization_dirs}"
 
