@@ -1,20 +1,85 @@
 name: Terraform Apply
 
 on:
-  workflow_call:
+  push:
+    branches:
+    - main
+  workflow_dispatch:
 
-permissions: {}
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: terraform-deploy
+  cancel-in-progress: false
 
 jobs:
   renovate:
     runs-on: ubuntu-latest
+    environment: production
     steps:
-      - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+    - name: Checkout
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-      - name: Get token
-        id: get_token
-        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
-        with:
-          private-key: ${{ secrets.TERRAFORM_APP_PRIVATE_KEY }}
-          client-id: Iv23liMMuBsRmXtIDYgI
+    - name: Get token
+      id: get_token
+      uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+      with:
+        private-key: ${{ secrets.TERRAFORM_APP_PRIVATE_KEY }}
+        client-id: Iv23liMMuBsRmXtIDYgI
+
+    - name: Configure AWS credentials
+      id: aws-credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+        aws-region: us-east-1
+        role-session-name: GitHubActions-Terraform-Github
+        mask-aws-account-id: true
+
+    - name: Mask AWS account ID
+      shell: bash
+      run: echo "::add-mask::${{ steps.aws-credentials.outputs.aws-account-id }}"
+
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: "~> 1.5"
+
+    - name: Terraform Init
+      id: init
+      shell: bash
+      working-directory: ./repositories
+      run: |
+        terraform init \
+          -backend-config="bucket=${{ secrets.AWS_S3_STATE_KEY }}" \
+          -backend-config="key=${{ secrets.AWS_S3_STATE_KEY }}" \
+
+    - name: Terraform Plan
+      id: plan
+      shell: bash
+      working-directory: ./repositories
+      run: terraform plan -out=tfplan -no-color 2>&1
+
+    - name: Terraform Plan Status
+      shell: bash
+      if: steps.plan.outcome == 'failure'
+      run: exit 1
+
+    - name: Terraform Apply
+      id: apply
+      shell: bash
+      working-directory: ./repositories
+      run: terraform apply -auto-approve tfplan
+
+    - name: Deployment Summary
+      shell: bash
+      if: always()
+      run: |
+        echo "## Deployment Summary (${{ inputs.environment }})" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "| Step | Status |" >> $GITHUB_STEP_SUMMARY
+        echo "|------|--------|" >> $GITHUB_STEP_SUMMARY
+        echo "| Plan | ${{ steps.plan.outcome }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| Apply | ${{ steps.apply.outcome }} |" >> $GITHUB_STEP_SUMMARY
