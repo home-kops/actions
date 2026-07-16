@@ -74,6 +74,7 @@ jobs:
       run: terraform apply -auto-approve tfplan
       with:
         GITHUB_TOKEN: ${{ steps.get_token.outputs.token }}
+        TF_VAR_renovate_private_key: ${{ secrets.TF_RENOVATE_PRIVATE_KEY }}
 
     - name: Deployment Summary
       shell: bash
