@@ -72,6 +72,8 @@ jobs:
       shell: bash
       working-directory: ./repositories
       run: terraform apply -auto-approve tfplan
+      with:
+        GITHUB_TOKEN: ${{ steps.get_token.outputs.token }}
 
     - name: Deployment Summary
       shell: bash
