@@ -27,3 +27,14 @@ jobs:
           renovate-version: 43.180.2
           configurationFile: renovate/config.js
           token: '${{ steps.get_token.outputs.token }}'
+        env:
+          RENOVATE_REPOSITORIES: ["${{ github.repository }}"]
+          RENOVATE_PACKAGE_RULES: |
+            [
+              {
+                matchManagers: ["github-actions"],
+                matchDepNames: ["/msdeleyto\/gh-actions/"],
+                enabled: false,
+              },
+            ]
+          RENOVATE_EXTENDS: ["config:best-practices"]
