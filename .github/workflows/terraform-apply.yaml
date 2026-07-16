@@ -53,7 +53,7 @@ jobs:
       working-directory: ./repositories
       run: |
         terraform init \
-          -backend-config="bucket=${{ secrets.AWS_S3_STATE_KEY }}" \
+          -backend-config="bucket=${{ secrets.AWS_S3_STATE_BUCKET }}" \
           -backend-config="key=${{ secrets.AWS_S3_STATE_KEY }}"
 
     - name: Terraform Plan
@@ -72,7 +72,7 @@ jobs:
       shell: bash
       working-directory: ./repositories
       run: terraform apply -auto-approve tfplan
-      with:
+      env:
         GITHUB_TOKEN: ${{ steps.get_token.outputs.token }}
         TF_VAR_renovate_private_key: ${{ secrets.TF_RENOVATE_PRIVATE_KEY }}
 
@@ -80,7 +80,7 @@ jobs:
       shell: bash
       if: always()
       run: |
-        echo "## Deployment Summary (${{ inputs.environment }})" >> $GITHUB_STEP_SUMMARY
+        echo "## Deployment Summary" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "| Step | Status |" >> $GITHUB_STEP_SUMMARY
         echo "|------|--------|" >> $GITHUB_STEP_SUMMARY
