@@ -54,7 +54,7 @@ jobs:
       run: |
         terraform init \
           -backend-config="bucket=${{ secrets.AWS_S3_STATE_KEY }}" \
-          -backend-config="key=${{ secrets.AWS_S3_STATE_KEY }}" \
+          -backend-config="key=${{ secrets.AWS_S3_STATE_KEY }}"
 
     - name: Terraform Plan
       id: plan
