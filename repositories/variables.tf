@@ -1,7 +1,7 @@
 variable "repositories" {
   type = list(string)
   default = [
-    "msdeleyto/homelab-manifests",
+    "homelab-manifests",
   ]
 }
 
