@@ -28,6 +28,7 @@ jobs:
       with:
         private-key: ${{ secrets.TERRAFORM_APP_PRIVATE_KEY }}
         client-id: Iv23liMMuBsRmXtIDYgI
+        owner: msdeleyto
 
     - name: Configure AWS credentials
       id: aws-credentials
