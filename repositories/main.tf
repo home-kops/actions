@@ -45,7 +45,6 @@ resource "github_repository_ruleset" "example" {
   }
 }
 
-
 resource "github_repository_file" "renovate" {
   count = length(var.repositories)
 
