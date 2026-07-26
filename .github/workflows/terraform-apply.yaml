@@ -62,6 +62,8 @@ jobs:
       shell: bash
       working-directory: ./repositories
       run: terraform plan -out=tfplan -no-color 2>&1
+      env:
+        GITHUB_TOKEN: ${{ steps.get_token.outputs.token }}
 
     - name: Terraform Plan Status
       shell: bash
