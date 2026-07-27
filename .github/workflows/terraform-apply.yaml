@@ -4,6 +4,8 @@ on:
   push:
     branches:
     - main
+    paths:
+    - 'repositories/**'
   workflow_dispatch:
 
 permissions:
@@ -15,7 +17,7 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  renovate:
+  terraform-apply:
     runs-on: ubuntu-latest
     environment: production
     steps:
