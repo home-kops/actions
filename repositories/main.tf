@@ -21,7 +21,8 @@ resource "github_repository_ruleset" "main" {
   }
 
   bypass_actors {
-    actor_type  = "OrganizationAdmin"
+    actor_id    = 21179154
+    actor_type  = "User"
     bypass_mode = "always"
   }
 
