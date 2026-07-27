@@ -6,7 +6,7 @@ resource "github_actions_secret" "renovate_private_key" {
   value       = var.renovate_private_key
 }
 
-resource "github_repository_ruleset" "example" {
+resource "github_repository_ruleset" "main" {
   count = length(var.repositories)
 
   name        = "main-test"
@@ -23,6 +23,13 @@ resource "github_repository_ruleset" "example" {
   bypass_actors {
     actor_type  = "OrganizationAdmin"
     bypass_mode = "always"
+  }
+
+  conditions {
+    ref_name {
+      include = ["refs/heads/main"]
+      exclude = []
+    }
   }
 
   rules {
