@@ -2,6 +2,9 @@ name: Renovate
 
 on:
   workflow_call:
+    secrets:
+      RENOVATE_PRIVATE_KEY:
+        required: true
 
 permissions: {}
 
