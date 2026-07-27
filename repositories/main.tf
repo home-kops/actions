@@ -60,7 +60,7 @@ resource "github_repository_file" "renovate" {
 
   repository          = var.repositories[count.index]
   file                = ".github/workflows/tf_renovate.yaml"
-  content             = "./templates/renovate.yaml"
+  content             = file("./templates/renovate.yaml")
   commit_message      = "create renovate workflow"
   overwrite_on_create = true
 }
