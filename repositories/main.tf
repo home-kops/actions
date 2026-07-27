@@ -44,10 +44,12 @@ resource "github_repository_ruleset" "main" {
 
     required_status_checks {
       required_check {
-        context = "validate-k8s-manifests / validate-helm"
+        context        = "validate-k8s-manifests / validate-helm"
+        integration_id = 15368
       }
       required_check {
-        context = "validate-k8s-manifests / validate-kustomizations"
+        context        = "validate-k8s-manifests / validate-kustomizations"
+        integration_id = 15368
       }
     }
   }
