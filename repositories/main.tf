@@ -9,7 +9,7 @@ resource "github_actions_secret" "renovate_private_key" {
 resource "github_repository_ruleset" "main" {
   count = length(var.repositories)
 
-  name        = "main-test"
+  name        = "main"
   repository  = var.repositories[count.index]
   target      = "branch"
   enforcement = "active"
