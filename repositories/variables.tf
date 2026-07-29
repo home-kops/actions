@@ -2,6 +2,7 @@ variable "repositories" {
   type = list(string)
   default = [
     "homelab-manifests",
+    "gh-actions"
   ]
 }
 
