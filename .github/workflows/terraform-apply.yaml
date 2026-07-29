@@ -66,6 +66,7 @@ jobs:
       run: terraform plan -out=tfplan -no-color 2>&1
       env:
         GITHUB_TOKEN: ${{ steps.get_token.outputs.token }}
+        TF_VAR_renovate_private_key: ${{ secrets.TF_RENOVATE_PRIVATE_KEY }}
 
     - name: Terraform Plan Status
       shell: bash
@@ -79,7 +80,6 @@ jobs:
       run: terraform apply -auto-approve tfplan
       env:
         GITHUB_TOKEN: ${{ steps.get_token.outputs.token }}
-        TF_VAR_renovate_private_key: ${{ secrets.TF_RENOVATE_PRIVATE_KEY }}
 
     - name: Deployment Summary
       shell: bash

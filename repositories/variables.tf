@@ -8,5 +8,4 @@ variable "repositories" {
 variable "renovate_private_key" {
   type      = string
   sensitive = true
-  default   = "secret"
 }
