@@ -1,8 +1,29 @@
 variable "repositories" {
-  type = list(string)
+  type = list(object({
+    name = string
+    required_checks = list(object({
+      context        = string
+      integration_id = number
+    }))
+  }))
   default = [
-    "homelab-manifests",
-    "gh-actions"
+    {
+      name = "homelab-manifests"
+      required_checks = [
+        {
+          context        = "validate-k8s-manifests / validate-helm"
+          integration_id = 15368
+        },
+        {
+          context        = "validate-k8s-manifests / validate-kustomizations"
+          integration_id = 15368
+        }
+      ]
+    },
+    {
+      name            = "gh-actions"
+      required_checks = []
+    }
   ]
 }
 
